@@ -15,7 +15,7 @@
 
 .. class:: center
 
-    :Название исследуемой задачи: Uncertainty Quantification Methods for Countering Attacks on Machine-Generated Text Detectors
+    :Название исследуемой задачи: Uncertainty Estimation Methods for Countering Attacks on Machine-Generated Text Detectors
     :Тип научной работы: M1P
     :Автор: Леванов Валерий Дмитриевич
     :Научный руководитель: к. ф-м н. Грабовой Андрей Валериевич,
