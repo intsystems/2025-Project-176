@@ -1,6 +1,7 @@
 \documentclass[a4paper, 12pt]{article}
 
 \input{preamble.tex}
+\usepackage{multicol}
 \renewcommand{\abstractname}{Abstract}
 
 \title{Uncertainty Estimation Methods for Countering Attacks on Machine-Generated Text Detectors}
@@ -11,23 +12,37 @@
 
 \affil[1]{\texttt{Moscow Institute of Physics and Technology, Moscow}}
 
-\date{\today}
-
 \begin{document}
 \maketitle
+
+
 
 \begin{abstract}
 	In this work, we explore the use of uncertainty estimation methods to enhance the quality of machine-generated text detectors against various attacks, such as homoglyphs, paraphrasing and noise injection. These attacks are not only used to bypass detection but also to test the resilience of detectors. We will test the hypothesis that uncertainty estimation can provide a more sustainable approach, eliminating the need for constant retraining. The research will evaluate this hypothesis in two scenarios: when only the text is available and when access to the model's internal states is also provided. The planned experiments aim to validate the results and compare them with current state-of-the-art solutions.
 \end{abstract}
 
 \section{Introduction}
+Recent advancements in large language models (LLMs) allow for the easy creation of coherent texts that are almost have not diffence from those written by humans. Despite the wide range of efficient applications of generative models for society, there is also a high risk of their misuse for spreading misinformation or solving students' homework. Therefore, there is a need for effective methods to discern machine-generated text from human-written text. This task is highly challenging due to the diversity of models, their generation styles and different texts domains. Also various types of attacks pose particular difficulties for detection, and even the simplest of these attacks can significantly reduce the accuracy of effective detectors.
 
+The main approach to finding differences between texts will be estimation of uncertainty. This method has already been investigated for various NLP tasks such as machine translation (MT), text summarization (TS), and question answering (QA)\citep{Polygraph}. Uncertainty estimation is also proven effective for detecting generated images by analyzing the distributions of natural images \citep{Image_uncertainty}.
 
+In this paper, we aim to combine an approach with uncertainty estimation for the task of detecting machine-generated text. We will examine whether the representations of the machine and human text models differ from each other. This research could serve as a foundation for developing attack-resistant detectors capable of identifying machine-generated text with high accuracy.
+
+\section{Problem statement}
+
+Formally, the problem can be described as follows:  
+
+Given a set of texts \(\{x_n\}\) with binary labels \(\{y_n\}\), where the labels indicate whether the text is machine-generated or human-written. The research will explore two approaches to calculating uncertainty.
+
+\subsection {White-box methods}  
+In this case, the model \(F(x)\) can be represented as a composition of mappings \(f_1(x)\) and \(f_2(x)\), where \(f_1(x)\) maps the text to some internal representation of the model, and \(f_2(x)\) maps this representation to the model's prediction. In the white-box method, for a specific text, we can observe both \(f_1(x)\) and \(F(x)\), which means that the model allows us to examine its internal states during prediction. The goal is to use uncertainty estimation methods to study whether texts with different labels cluster together. In this case, uncertainty can be estimated in various ways\citep{Polygraph}, which require some knowledge of the internal workings of the model.  
+
+\subsection {Black-box methods}   
+In many modern models, internal states and architecture are not available for study, but even in this case there are many methods for estimating uncertainty based only on the response model \(F(x)\). Black-box methods were also used in the work\citep{Polygraph}. The task is to study these methods and compare their effectiveness with the white-box methods.
 
 \section{Conclusion}
 
-
 \bibliographystyle{unsrtnat}
-\bibliography{Vladimirov2022RestoringHandMovement.bib}
+\bibliography{references.bib}
 
 \end{document}
