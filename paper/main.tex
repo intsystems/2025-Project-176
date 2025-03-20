@@ -40,6 +40,18 @@ In this case, the model \(F(x)\) can be represented as a composition of mappings
 \subsection {Black-box methods}   
 In many modern models, internal states and architecture are not available for study, but even in this case there are many methods for estimating uncertainty based only on the response model \(F(x)\). Black-box methods were also used in the work\citep{Polygraph}. The task is to study these methods and compare their effectiveness with the white-box methods.
 
+\section{Computational Experiment}
+
+\textbf{The first approximation:} Let's start with a simple check of the distribution of the average entropy and perplexity metrics depending on the class label. It's interesting to see if they differ.  To do this, we will use part of the M4GT\citep{wang2024m4gt} dataset as data. It is intended for the task of binary classification and contains 65,177 human-written texts and 73,288 machine-generated texts.
+
+\begin{figure}[bhtp]
+	\includegraphics[width=\textwidth]{plot1.png}
+	\caption{Perplexity distribution differs for different labels.}
+	\label{fig:schema}
+\end{figure}
+
+We processed texts from both labels using the LLM (Llama-3.1-8B-Instruct) and utilized contextual logits to compute two metrics: perplexity and entropy. By analyzing the distribution of points on the plane (Figure 1), a linear relationship between perplexity and entropy becomes evident. Furthermore, it is observed that machine-generated (MG) texts, on average, exhibit lower perplexity compared to human-written (HW) texts, with a difference of approximately 0.2. This finding is promising, as it suggests that the distinction between MG and HW text distributions can potentially be detected using uncertainty estimation (UE). In the following sections, we explore this idea further to develop a more robust detection framework. 
+
 \section{Conclusion}
 
 \bibliographystyle{unsrtnat}
