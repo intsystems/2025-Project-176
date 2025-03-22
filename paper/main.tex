@@ -46,11 +46,11 @@ In many modern models, internal states and architecture are not available for st
 
 \begin{figure}[bhtp]
 	\includegraphics[width=\textwidth]{plot1.png}
-	\caption{Perplexity distribution differs for different labels.}
+	\caption{Perplexity distribution differs for different models.}
 	\label{fig:schema}
 \end{figure}
 
-We processed texts from both labels using the LLM (Llama-3.1-8B-Instruct) and utilized contextual logits to compute two metrics: perplexity and entropy. By analyzing the distribution of points on the plane (Figure 1), a linear relationship between perplexity and entropy becomes evident. Furthermore, it is observed that machine-generated (MG) texts, on average, exhibit lower perplexity compared to human-written (HW) texts, with a difference of approximately 0.2. This finding is promising, as it suggests that the distinction between MG and HW text distributions can potentially be detected using uncertainty estimation (UE). In the following sections, we explore this idea further to develop a more robust detection framework. 
+We processed texts from both labels using the LLM (Llama-3.1-8B-Instruct) and utilized contextual logits to compute two metrics: perplexity and entropy. By analyzing the distribution of points on the plane (Figure 1), a linear relationship between perplexity and entropy becomes evident. It is noticeable that the distribution of models is very different. Davinci and dolly have similar entropy as humans, while chatGPT and gpt4 is very different. This finding is promising, as it suggests that the distinction between MG and HW text distributions can potentially be detected using uncertainty estimation (UE). In the following sections, we explore this idea further to develop a more robust detection framework. 
 
 \section{Conclusion}
 
