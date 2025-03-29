@@ -35,7 +35,14 @@ Formally, the problem can be described as follows:
 Given a set of texts \(\{x_n\}\) with binary labels \(\{y_n\}\), where the labels indicate whether the text is machine-generated or human-written. The research will explore two approaches to calculating uncertainty.
 
 \subsection {White-box methods}  
-In this case, the model \(F(x)\) can be represented as a composition of mappings \(f_1(x)\) and \(f_2(x)\), where \(f_1(x)\) maps the text to some internal representation of the model, and \(f_2(x)\) maps this representation to the model's prediction. In the white-box method, for a specific text, we can observe both \(f_1(x)\) and \(F(x)\), which means that the model allows us to examine its internal states during prediction. The goal is to use uncertainty estimation methods to study whether texts with different labels cluster together. In this case, uncertainty can be estimated in various ways\citep{Polygraph}, which require some knowledge of the internal workings of the model.  
+In this case, the model \(F(x)\) can be represented as a composition of mappings \(f_1(x)\) and \(f_2(x)\), where \(f_1(x)\) maps the text to some internal representation of the model, and \(f_2(x)\) maps this representation to the model's prediction. In the white-box method, for a specific text, we can observe both \(f_1(x)\) and \(F(x)\), which means that the model allows us to examine its internal states during prediction. The goal is to use uncertainty estimation methods to study whether texts with different labels cluster together. In this case, uncertainty can be estimated in various ways\citep{Polygraph}, which require some knowledge of the internal workings of the model. 
+
+As such metrics, we will use \textbf{perplexity}: 
+$$PPL  = \exp\left(-\frac{1}{L} \sum_{l=1}^{L} \log P(w_l | w_{<l})\right)$$
+
+And also \textbf{mean token entropy}, where we simply average entropy of each individual token in the generated sequence.
+
+$$H = -\frac{1}{N} \sum_{i=1}^{N} \sum_{j} P(w_j | w_{<i}) \log P(w_j | w_{<i})$$
 
 \subsection {Black-box methods}   
 In many modern models, internal states and architecture are not available for study, but even in this case there are many methods for estimating uncertainty based only on the response model \(F(x)\). Black-box methods were also used in the work\citep{Polygraph}. The task is to study these methods and compare their effectiveness with the white-box methods.
@@ -45,12 +52,12 @@ In many modern models, internal states and architecture are not available for st
 \textbf{The first approximation:} Let's start with a simple check of the distribution of the average entropy and perplexity metrics depending on the class label. It's interesting to see if they differ.  To do this, we will use part of the M4GT\citep{wang2024m4gt} dataset as data. It is intended for the task of binary classification and contains 65,177 human-written texts and 73,288 machine-generated texts.
 
 \begin{figure}[bhtp]
-	\includegraphics[width=\textwidth]{plot1.png}
+	\includegraphics[width=\textwidth]{arxiv.png}
 	\caption{Perplexity distribution differs for different models.}
 	\label{fig:schema}
 \end{figure}
 
-We processed texts from both labels using the LLM (Llama-3.1-8B-Instruct) and utilized contextual logits to compute two metrics: perplexity and entropy. By analyzing the distribution of points on the plane (Figure 1), a linear relationship between perplexity and entropy becomes evident. It is noticeable that the distribution of models is very different. Davinci and dolly have similar entropy as humans, while chatGPT and gpt4 is very different. This finding is promising, as it suggests that the distinction between MG and HW text distributions can potentially be detected using uncertainty estimation (UE). In the following sections, we explore this idea further to develop a more robust detection framework. 
+We processed texts from both labels using the LLM (Llama-3.1-8B-Instruct) and utilized contextual logits to compute two metrics: perplexity and entropy. For consistency of the experiment, all data was taken from ARXIV. By analyzing the distribution of points on the plane (Figure 1). It is noticeable that the distribution of models is very different. The texts of different models are clustered according to the values of perplexity, which is a very interesting result. Dolly has similar entropy as humans, while chatGPT, bloomz, davinci and gpt4 is very different. This finding is promising, as it suggests that the distinction between MG and HW text distributions can potentially be detected using uncertainty estimation (UE). In the following sections, we explore this idea further to develop a more robust detection framework. 
 
 \section{Conclusion}
 
