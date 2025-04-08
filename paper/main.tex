@@ -37,19 +37,12 @@ Given a set of texts \(\{x_n\}\) with binary labels \(\{y_n\}\), where the label
 \subsection {White-box methods}  
 In this case, the model \(F(x)\) can be represented as a composition of mappings \(f_1(x)\) and \(f_2(x)\), where \(f_1(x)\) maps the text to some internal representation of the model, and \(f_2(x)\) maps this representation to the model's prediction. In the white-box method, for a specific text, we can observe both \(f_1(x)\) and \(F(x)\), which means that the model allows us to examine its internal states during prediction. The goal is to use uncertainty estimation methods to study whether texts with different labels cluster together. In this case, uncertainty can be estimated in various ways\citep{Polygraph}, which require some knowledge of the internal workings of the model. 
 
-As such metrics, we will use \textbf{perplexity}: 
-$$PPL  = \exp\left(-\frac{1}{L} \sum_{l=1}^{L} \log P(w_l | w_{<l})\right)$$
-
-And also \textbf{mean token entropy}, where we simply average entropy of each individual token in the generated sequence.
-
-$$H = -\frac{1}{N} \sum_{i=1}^{N} \sum_{j} P(w_j | w_{<i}) \log P(w_j | w_{<i})$$
-
 \subsection {Black-box methods}   
 In many modern models, internal states and architecture are not available for study, but even in this case there are many methods for estimating uncertainty based only on the response model \(F(x)\). Black-box methods were also used in the work\citep{Polygraph}. The task is to study these methods and compare their effectiveness with the white-box methods.
 
 \section{Computational Experiment}
 
-\textbf{The first approximation:} Let's start with a simple check of the distribution of the average entropy and perplexity metrics depending on the class label. It's interesting to see if they differ.  To do this, we will use part of the M4GT\citep{wang2024m4gt} dataset as data. It is intended for the task of binary classification and contains 65,177 human-written texts and 73,288 machine-generated texts.
+\textbf{The first approximation:} Let's start with a simple check of the distribution of the average entropy and perplexity metrics depending on the class label. It's interesting to see if they differ.  To do this, we will use part of the M4GT\citep{wang2024m4gt} dataset as data. 
 
 \begin{figure}[bhtp]
 	\includegraphics[width=\textwidth]{arxiv.png}
@@ -58,6 +51,36 @@ In many modern models, internal states and architecture are not available for st
 \end{figure}
 
 We processed texts from both labels using the LLM (Llama-3.1-8B-Instruct) and utilized contextual logits to compute two metrics: perplexity and entropy. For consistency of the experiment, all data was taken from ARXIV. By analyzing the distribution of points on the plane (Figure 1). It is noticeable that the distribution of models is very different. The texts of different models are clustered according to the values of perplexity, which is a very interesting result. Dolly has similar entropy as humans, while chatGPT, bloomz, davinci and gpt4 is very different. This finding is promising, as it suggests that the distinction between MG and HW text distributions can potentially be detected using uncertainty estimation (UE). In the following sections, we explore this idea further to develop a more robust detection framework. 
+
+\section{Method}
+\subsection{Uncertainty Calculation}
+Uncertainty estimation is a key method we use to analyze texts in our paper. One of the main approaches is information-based methods that work with the model's output probabilities. These methods include:
+
+1) \textbf{Perplexity (PPL)} - measures how surprised the model is by the text:
+$$PPL = \exp\left(-\frac{1}{L} \sum_{l=1}^{L} \log P(w_l | w_{<l})\right)$$
+
+2) \textbf{Mean token entropy} - calculates average uncertainty per token:
+$$H = -\frac{1}{N} \sum_{i=1}^{N} \sum_{j} P(w_j | w_{<i}) \log P(w_j | w_{<i})$$
+
+3) \textbf{Monte Carlo Sequence Entropy} - we run the model multiple times with small random changes and average the results:
+$$H_S(x; \theta) = - \frac{1}{K} \sum_{k=1}^{K} \log P(y^{(k)} | x, \theta)$$
+
+Another approach uses \textbf{density-based methods}. We first analyze the model's hidden states from the training data - calculating their mean and variance. Then, we compare these learned patterns to the hidden states of new test texts to measure how different they are.
+
+The main method here is \textbf{Mahalanobis Distance}:
+$$MD(x) = (h(x) - \mu)^T \Sigma^{-1} (h(x) - \mu)$$
+
+\subsection{LLM}
+
+It is very important to choose the model through which the logits of the text contexts will be obtained. The choice fell on \textbf{Llama-3-8B-Instruct}. Its main advantages are its relative lightness and access to the internal representations of the context. Text will be sent to the input of the model without additional requests. The interesting output of the model is the context logits, and we will usually focus on the k most likely logits to simplify calculations.
+
+\subsection{Datasets}
+
+The basis of the research is the availability of extensive datasets. An important requirement for them will be the presence of texts from multiple domains and several generation models. These qualities help to increase the robustness and accuracy of the detectors.
+
+M4GT\citep{wang2024m4gt} is designed for the task of binary classification and contains 65,177 human-written texts and 73,288 machine-generated texts. It includes several domains (Reddit, wikiHow, Wikipedia) and generative models (GPT-4, Cohere, Dolly).
+
+RAID\citep{RAID} is a massive dataset of 6 million text examples from a wide range of domains and models. During generation, various decoding strategies and repetition penalties were used, significantly increasing text diversity. Its key feature is the inclusion of adversarial attacks on texts, which aids in training robust detectors.
 
 \section{Conclusion}
 
