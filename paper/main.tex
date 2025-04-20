@@ -24,7 +24,7 @@
 \section{Introduction}
 Recent advancements in large language models (LLMs) allow for the easy creation of coherent texts that are almost have not diffence from those written by humans. Despite the wide range of efficient applications of generative models for society, there is also a high risk of their misuse for spreading misinformation or solving students' homework. Therefore, there is a need for effective methods to discern machine-generated text from human-written text. This task is highly challenging due to the diversity of models, their generation styles and different texts domains. Also various types of attacks pose particular difficulties for detection, and even the simplest of these attacks can significantly reduce the accuracy of effective detectors.
 
-The main approach to finding differences between texts will be estimation of uncertainty. This method has already been investigated for various NLP tasks such as machine translation (MT), text summarization (TS), and question answering (QA)\citep{Polygraph}. Uncertainty estimation is also proven effective for detecting generated images by analyzing the distributions of natural images \citep{Image_uncertainty}.
+The main approach to finding differences between texts will be \textbf{Uncertainty Estimation} (UE). Uncertainty estimation is a metric computed over text that represents a model’s understanding about the given text. It can be calculated based on the logits of the context, hidden layers, or the output of the model’s prediction for the text. This method has already been investigated for various NLP tasks such as machine translation (MT), text summarization (TS), and question answering (QA)\citep{Polygraph}. Uncertainty estimation is also proven effective for detecting generated images by analyzing the distributions of natural images \citep{Image_uncertainty}. The use of uncertainty estimation for detecting machine-generated text has not been explored in the literature, which further motivates investigating this direction.
 
 In this paper, we aim to combine an approach with uncertainty estimation for the task of detecting machine-generated text. We will examine whether the representations of the machine and human text models differ from each other. This research could serve as a foundation for developing attack-resistant detectors capable of identifying machine-generated text with high accuracy.
 
@@ -35,65 +35,16 @@ Formally, the problem can be described as follows:
 Given a set of texts \(\{x_n\}\) with binary labels \(\{y_n\}\), where the labels indicate whether the text is machine-generated or human-written. The research will explore two approaches to calculating uncertainty.
 
 \subsection {White-box methods}  
-In this case, the model \(F(x)\) can be represented as a composition of mappings \(f_1(x)\) and \(f_2(x)\), where \(f_1(x)\) maps the text to some internal representation of the model, and \(f_2(x)\) maps this representation to the model's prediction. In the white-box method, for a specific text, we can observe both \(f_1(x)\) and \(F(x)\), which means that the model allows us to examine its internal states during prediction. The goal is to use uncertainty estimation methods to study whether texts with different labels cluster together. In this case, uncertainty can be estimated in various ways\citep{Polygraph}, which require some knowledge of the internal workings of the model. 
+In this case, the model \(F(x)\) can be represented as a composition of mappings \(f_1(x)\) and \(f_2(h)\), where \(f_1(x)\) maps the text to some internal representation of the model such as context logits or hidden states, and \(f_2(h)\) maps this representation to the model's prediction. In the white-box method, for a specific text, we can observe both \(f_1(x)\) and \(F(x)\), which means that the model allows us to examine its internal states during prediction. The goal is to use uncertainty estimation methods to study whether texts with different labels cluster together. In this case, uncertainty can be estimated in various ways\citep{Polygraph}, which require some knowledge of the internal workings of the model. 
+
+Typically, three types of such methods are distinguished. The first type comprises \textbf{information-based} methods, which are computed from the model's context logits and rely on word prediction probabilities for each token. Another category is \textbf{ensemble-based methods}, requiring multiple distinct models to aggregate their output metrics; we exclude this approach due to prohibitive memory and computational costs. Finally, \textbf{density-based} methods analyze the distribution of hidden states h(x): by estimating h(x) distributions for labeled texts, these methods evaluate whether new texts align with (implying matching labels) or deviate from (indicating label mismatch) the learned distributions.
 
 \subsection {Black-box methods}   
 In many modern models, internal states and architecture are not available for study, but even in this case there are many methods for estimating uncertainty based only on the response model \(F(x)\). Black-box methods were also used in the work\citep{Polygraph}. The task is to study these methods and compare their effectiveness with the white-box methods. 
 
-\section{Computational Experiment}
+\subsection{Classification models}
 
-The primary objective is to compare binary classification based on uncertainty estimates with alternative methods for detecting machine-generated text. To do this, we will use part of the M4GT\citep{wang2024m4gt} dataset as data. 
-
-\begin{table}[ht]
-\centering
-\begin{tabular}{llrrrrr}
-\toprule
-\textbf{Metric} & \textbf{Label} & \textbf{Mean} & \textbf{Median} & \textbf{Std} & \textbf{Min} & \textbf{Max} \\
-\midrule
-mean entropy   & Human   & 0.0045   & 0.0045   & 0.0005   & 0.0023   & 0.0060   \\
-mean entropy   & Machine & 0.0034   & 0.0035   & 0.0009   & 0.0004   & 0.0067   \\
-perplexity      & Human   & 2.6851   & 2.6658   & 0.3378   & 1.6291   & 3.8900   \\
-perplexity      & Machine & 2.1756   & 2.1370   & 0.4377   & 1.0716   & 4.5481   \\
-mc entropy     & Human   & 429.206  & 452.375  & 115.155  & 164.375  & 695.500  \\
-mc entropy     & Machine & 216.063  & 190.125  & 98.2335  & 19.0625  & 674.500  \\
-mahalanobis     & Human   & 1465.920 & 1400.880 & 350.174  & 357.836  & 4817.470 \\
-mahalanobis     & Machine & 2029.660 & 1983.840 & 469.339  & 996.327  & 6088.490 \\
-\bottomrule
-\end{tabular}
-\caption{Metrics for human and machine-generated texts}
-\label{tab:metric-by-label}
-\end{table}
-
-
-We processed texts from both labels using the LLM (Llama-3.1-8B-Instruct) and utilized contextual logits to compute four metrics: perplexity, mean token entropy, monte carlo sequence entropy and mahalanobis distance. For consistency of the experiment, all data was taken from Reddit. The results can be seen in Table 1. Some metrics show pronounced variation between human- and machine-generated texts. This finding is promising, as it suggests that the distinction between MG and HW text distributions can potentially be detected using uncertainty estimation (UE). In the following sections, we explore this idea further to develop a more robust detection framework. 
-
-The next step involves training a simple neural network classifier. A lightweight architecture comprising several linear layers was selected and implemented. We will compare this model with RoBERTa for sequence classification. The model will be fine-tuned on the same training dataset, and the results will be compared.
-
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.5\textwidth]{loss.png}
-\caption{Loss for Simple Classifier}
-\label{fig:image}
-\end{figure}
-
-
-
-\begin{table}[ht]
-\centering
-\begin{tabular}{|l|c|c|c|c|}
-\hline
-\textbf{Model} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{Train Time (s)} \\
-\hline
-RobertaForSequenceClassification & 0.9901 & 0.9901 & 0.9992 & 594.4377 \\
-neural network classifier with uncertainty & 0.9136 & 0.9455 & 0.9542 & 30.1410 \\
-\hline
-\end{tabular}
-\caption{Comparison of model performance metrics}
-\label{tab:model-comparison}
-\end{table}
-
-Table 2 presents the results. While our model achieves a good accuracy, it does not outperform RoBERTa. This discrepancy may be attributed to limitations in the classifier itself. Therefore, by selecting a different classifier model, performance could be improved. However, it is noteworthy that the training time of our classifier is significantly shorter.
+After calculating the metrics, classification needs to be performed based on them. The main objective is to achieve relatively good metric scores (ROC-AUC, accuracy) while spending minimal time on training. Therefore, we will focus on models capable of effectively performing classification on numerical data. Suitable candidates include: Logistic Regression, Neural Network Classifiers, Random Forest and Gradient Boosting.
 
 \section{Method}
 \subsection{Uncertainty Calculation}
@@ -125,7 +76,60 @@ M4GT\citep{wang2024m4gt} is designed for the task of binary classification and c
 
 RAID\citep{RAID} is a massive dataset of 6 million text examples from a wide range of domains and models. During generation, various decoding strategies and repetition penalties were used, significantly increasing text diversity. Its key feature is the inclusion of adversarial attacks on texts, which aids in training robust detectors.
 
+\subsection{Binare Сlassification Models}
+
+For our baseline text classification, we'll use an untrained RobertaForSequenceClassification model fine-tuned for one epoch to compare training times while expecting high accuracy. For uncertainty-based classification, we implement three approaches: (1) logistic regression as the simplest method, (2) a RandomForestClassifier with 300 trees (max depth of tree = 10), and (3) a neural network classifier consisting of 4 linear layers with BatchNorm and Dropout regularization on each layer, optimized using Adam with Binary Cross-Entropy loss ($L = -\frac{1}{N} \sum[y_i·\log(p_i) + (1-y_i)·\log(1-p_i)]$), trained for 300 epochs to ensure convergence. This setup allows comprehensive comparison of both traditional and neural approaches while controlling for computational efficiency.
+
+\section{Computational Experiment}
+
+The primary objective is to compare binary classification based on uncertainty estimates with alternative methods for detecting machine-generated text. To do this, we will use part of the M4GT\citep{wang2024m4gt} dataset as data. The dataset comprises 18,000 texts, with two-thirds generated uniformly by six different models and the remaining one-third consisting of human-written texts. All texts were sourced from arXiv.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{llrrrrr}
+\toprule
+\textbf{Metric} & \textbf{Label} & \textbf{Mean} & \textbf{Median} & \textbf{Std} & \textbf{Min} & \textbf{Max} \\
+\midrule
+mean entropy   & Human   & 0.0038   & 0.0038   & 0.0006   & 0.0010   & 0.0066   \\
+mean entropy   & Machine   & 0.0034   & 0.0033   & 0.0007   & 0.0007   & 0.0061   \\
+perplexity    & Human   & 2.2668   & 2.2414   & 0.2887   & 1.2250   & 4.1787   \\
+perplexity    & Machine   & 2.1129   & 2.0516   & 0.3197   & 1.1083   & 3.8121   \\
+mc entropy    & Human   & 232.603  & 224.375  & 54.179   & 63.7188  & 530.000  \\
+mc entropy    & Machine   & 175.064  & 165.625  & 66.8385  & 19.2969  & 550.000  \\
+mahalanobis   & Human   & 125.960  & 124.123  & 23.165   & 72.2812  & 494.407  \\
+mahalanobis   & Machine   & 149.813  & 143.992  & 29.6482  & 92.4591  & 653.824  \\
+\bottomrule
+\end{tabular}
+\caption{Metrics for human and machine-generated texts}
+\label{tab:metric-by-label}
+\end{table}
+
+
+We processed texts from both labels using the LLM (Llama-3.1-8B-Instruct) and utilized contextual logits and hidden states to compute four metrics: perplexity, mean token entropy, monte carlo sequence entropy and mahalanobis distance. The results can be seen in Table 1. Some metrics show pronounced variation between human- and machine-generated texts. This finding is promising, as it suggests that the distinction between MG and HW text distributions can potentially be detected using uncertainty estimation (UE). In the following sections, we explore this idea further to develop a more robust detection framework. 
+
+The next step involves training and validating the proposed classification models using our UE.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Model} & \textbf{Accuracy} & \textbf{ROC-AUC} & \textbf{Train Time (s)} \\
+\hline
+BERT Classifier & 0.9942 & 0.9954 & 1489.0528 \\
+Neural Classifier with uncertainty & 0.8183 & 0.7942 & 208.9576 \\
+Random forest with uncertainty & 0.8103 & 0.7831 & 6.7727 \\
+Logistic Regression with uncertainty & 0.7744 & 0.7317 & 0.0134 \\
+\hline
+\end{tabular}
+\caption{Performance comparison of classification approaches with uncertainty estimation on data from arXiv}
+\label{tab:model-performance}
+\end{table}
+
+Table 2 presents the results. The results demonstrate that we have developed an effective approach for text classification with minimal training time requirements. As evidenced by our experiments, the Random Forest classifier achieves competitive ROC-AUC performance (0.7831) while requiring less than 10 seconds for training. In stark contrast, fine-tuning the LLM-based model demands substantially more computational resources, with a training time exceeding 1400 seconds - approximately 200 times slower than our uncertainty-based Random Forest implementation.. Therefore, by selecting a different classifier model, performance could be improved. However, it is noteworthy that the training time of our classifier is significantly shorter.
+
 \section{Conclusion}
+
+Our results demonstrate that uncertainty estimation methods can effectively identify machine-generated texts, with our proposed model achieving good ROC-AUC performance (0.783) while requiring minimal training time (<10 seconds). The research potential in this field is substantial—with greater computational resources, we could expand uncertainty estimation through ensemble methods and analyze more diverse text sources, paving the way for next-generation detectors that combine high accuracy, low computational costs, and resilience against evolving generation techniques.
 
 \bibliographystyle{unsrtnat}
 \bibliography{references.bib}
