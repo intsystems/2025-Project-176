@@ -24,7 +24,7 @@
 \section{Introduction}
 Recent advancements in large language models (LLMs) allow for the easy creation of coherent texts that are almost have not diffence from those written by humans. Despite the wide range of efficient applications of generative models for society, there is also a high risk of their misuse for spreading misinformation or solving students' homework. Therefore, there is a need for effective methods to discern machine-generated text from human-written text. This task is highly challenging due to the diversity of models, their generation styles and different texts domains. Also various types of attacks pose particular difficulties for detection, and even the simplest of these attacks can significantly reduce the accuracy of effective detectors.
 
-The main approach to finding differences between texts will be \textbf{Uncertainty Estimation} (UE). Uncertainty estimation is a metric computed over text that represents a model’s understanding about the given text. It can be calculated based on the logits of the context, hidden layers, or the output of the model’s prediction for the text. This method has already been investigated for various NLP tasks such as machine translation (MT), text summarization (TS), and question answering (QA)\citep{Polygraph}. Uncertainty estimation is also proven effective for detecting generated images by analyzing the distributions of natural images \citep{Image_uncertainty}. The use of uncertainty estimation for detecting machine-generated text has not been explored in the literature, which further motivates investigating this direction.
+The main approach to finding differences between texts will be \textbf{Uncertainty Estimation} (UE). The term "uncertainty" is chosen based on the hypothesis that language models exhibit quantifiable differences in their prediction confidence when processing human-written versus machine-generated texts. This occurs because machine-generated texts often contain subtle statistical artifacts or linguistic irregularities that diverge from the natural language patterns the model was trained on, leading to increased uncertainty in the model's internal representations and output distributions. Uncertainty estimation is a metric computed over text that represents a model’s understanding about the given text. It can be calculated based on the logits of the context, hidden layers, or the output of the model’s prediction for the text. This method has already been investigated for various NLP tasks such as machine translation (MT), text summarization (TS), and question answering (QA)\citep{Polygraph}. Uncertainty estimation is also proven effective for detecting generated images by analyzing the distributions of natural images \citep{Image_uncertainty}. The use of uncertainty estimation for detecting machine-generated text has not been explored in the literature, which further motivates investigating this direction.
 
 In this paper, we aim to combine an approach with uncertainty estimation for the task of detecting machine-generated text. We will examine whether the representations of the machine and human text models differ from each other. This research could serve as a foundation for developing attack-resistant detectors capable of identifying machine-generated text with high accuracy.
 
@@ -32,45 +32,45 @@ In this paper, we aim to combine an approach with uncertainty estimation for the
 
 Formally, the problem can be described as follows:  
 
-Given a set of texts \(\{x_n\}\) with binary labels \(\{y_n\}\), where the labels indicate whether the text is machine-generated or human-written. The research will explore two approaches to calculating uncertainty.
+We formally define our detection framework through a \textbf{classification model} \( F: \mathcal{D} \rightarrow \mathcal{C} \), where \(\mathcal{D}\) represents the space of input texts and \(\mathcal{C} = \{0,1\}\) denotes the binary classification space (0 for human-written texts, 1 for machine-generated outputs). The research will explore two approaches to calculating uncertainty.
 
 \subsection {White-box methods}  
-In this case, the model \(F(x)\) can be represented as a composition of mappings \(f_1(x)\) and \(f_2(h)\), where \(f_1(x)\) maps the text to some internal representation of the model such as context logits or hidden states, and \(f_2(h)\) maps this representation to the model's prediction. In the white-box method, for a specific text, we can observe both \(f_1(x)\) and \(F(x)\), which means that the model allows us to examine its internal states during prediction. The goal is to use uncertainty estimation methods to study whether texts with different labels cluster together. In this case, uncertainty can be estimated in various ways\citep{Polygraph}, which require some knowledge of the internal workings of the model. 
+In this case, the classification model decomposes into \( F = f_2 \circ f_1 \), with \( f_1: \mathcal{D} \rightarrow \mathbb{R}^d \) generating latent representations (in this work, we will utilize either context logits or hidden states obtained by applying a \textbf{representation model} to input texts. The representation model—an open-weight LLM with accessible internal architecture) and \( f_2: \mathbb{R}^d \rightarrow \mathcal{C} \) performing the final classification. In the white-box method, for a specific text, we can observe both \(f_1(x)\) and \(F(x)\), which means that the model allows us to examine its internal states during prediction. The goal is to use various functions applied to the outputs of $f_1$ to study whether texts from different authors cluster together. In this case, uncertainty can be estimated in various ways\citep{Polygraph}, which require some knowledge of the internal workings of the representation model. 
 
-Typically, three types of such methods are distinguished. The first type comprises \textbf{information-based} methods, which are computed from the model's context logits and rely on word prediction probabilities for each token. Another category is \textbf{ensemble-based methods}, requiring multiple distinct models to aggregate their output metrics; we exclude this approach due to prohibitive memory and computational costs. Finally, \textbf{density-based} methods analyze the distribution of hidden states h(x): by estimating h(x) distributions for labeled texts, these methods evaluate whether new texts align with (implying matching labels) or deviate from (indicating label mismatch) the learned distributions.
+Typically, three types of such methods are distinguished. The first type comprises \textbf{information-based} methods, which are computed from the representation model's context logits and rely on word prediction probabilities for each token. Another category is \textbf{ensemble-based methods}, requiring multiple distinct representation models to aggregate their output metrics; we exclude this approach due to prohibitive memory and computational costs. Finally, \textbf{density-based} methods analyze the distribution of hidden states h(x): by estimating h(x) distributions for labeled texts, these methods evaluate whether new texts align with (implying matching labels) or deviate from (indicating label mismatch) the learned distributions.
 
 \subsection {Black-box methods}   
-In many modern models, internal states and architecture are not available for study, but even in this case there are many methods for estimating uncertainty based only on the response model \(F(x)\). Black-box methods were also used in the work\citep{Polygraph}. The task is to study these methods and compare their effectiveness with the white-box methods. 
+In many modern models, internal states and architecture are not available for study, but even in this case there are many methods for estimating uncertainty based only on the response classification model \(F(x)\). Black-box methods were also used in the work\citep{Polygraph}. The task is to study these methods and compare their effectiveness with the white-box methods. 
 
 \subsection{Classification models}
 
 After calculating the metrics, classification needs to be performed based on them. The main objective is to achieve relatively good metric scores (ROC-AUC, accuracy) while spending minimal time on training. Therefore, we will focus on models capable of effectively performing classification on numerical data. Suitable candidates include: Logistic Regression, Neural Network Classifiers, Random Forest and Gradient Boosting.
 
 \section{Method}
-\subsection{Uncertainty Calculation}
-Uncertainty estimation is a key method we use to analyze texts in our paper. One of the main approaches is information-based methods that work with the model's output probabilities. These methods include:
+\subsection{Functions over latent model space}
+Uncertainty estimation is a key method we use to analyze texts in our paper. One of the main approaches is information-based methods that work with the representation model's output probabilities. These methods include:
 
-1) \textbf{Perplexity (PPL)} - measures how surprised the model is by the text:
+1) \textbf{Perplexity (PPL)} - quantifies the representation model’s predictive uncertainty for a given text sequence, defined as the exponentiated negative average log-probability::
 $$PPL = \exp\left(-\frac{1}{L} \sum_{l=1}^{L} \log P(w_l | w_{<l})\right)$$
 
-2) \textbf{Mean token entropy} - calculates average uncertainty per token:
+2) \textbf{Mean token entropy} - calculates average predictive dispersion per token, measuring the uniformity of the representation model's token-level probability distribution::
 $$H = -\frac{1}{N} \sum_{i=1}^{N} \sum_{j} P(w_j | w_{<i}) \log P(w_j | w_{<i})$$
 
-3) \textbf{Monte Carlo Sequence Entropy} - we run the model multiple times with small random changes and average the results:
+3) \textbf{Monte Carlo Sequence Entropy} approximates the entropy of the sequence prediction distribution by sampling K stochastic realizations of the representation model's output.:
 $$H_S(x; \theta) = - \frac{1}{K} \sum_{k=1}^{K} \log P(y^{(k)} | x, \theta)$$
 
-Another approach uses \textbf{density-based methods}. We first analyze the model's hidden states from the training data - calculating their mean and variance. Then, we compare these learned patterns to the hidden states of new test texts to measure how different they are.
+Another approach uses \textbf{density-based methods}. We first analyze the representation model's hidden states from the training data - calculating their mean and variance. Next, we examine the probability of observing a given text under the empirical measure.
 
-The main method here is \textbf{Mahalanobis Distance}:
+The main method here is \textbf{Mahalanobis Distance}. Method fits a Gaussian centered at the training data centroid $\mu$ with an empirical covariance matrix $\Sigma$. :
 $$MD(x) = (h(x) - \mu)^T \Sigma^{-1} (h(x) - \mu)$$
 
 \subsection{LLM}
 
-It is very important to choose the model through which the logits of the text contexts will be obtained. The choice fell on \textbf{Llama-3-8B-Instruct}. Its main advantages are its relative lightness and access to the internal representations of the context. Text will be sent to the input of the model without additional requests. The interesting output of the model is the context logits, and we will usually focus on the k most likely logits to simplify calculations.
+We selected \textbf{Llama-3-8B-Instruct} as our representation model due to its status as a state-of-the-art open-source LLM with accessible internal representations. Text will be sent to the input of the model without additional prompts. Our analysis primarily focuses on context logits, with computational simplification achieved by considering only the 512 most probable logits per token position.
 
 \subsection{Datasets}
 
-The basis of the research is the availability of extensive datasets. An important requirement for them will be the presence of texts from multiple domains and several generation models. These qualities help to increase the robustness and accuracy of the detectors.
+We choose datasets with texts from multiple domains and several generation models. These qualities help to increase the robustness and accuracy of the detectors.
 
 M4GT\citep{wang2024m4gt} is designed for the task of binary classification and contains 65,177 human-written texts and 73,288 machine-generated texts. It includes several domains (Reddit, wikiHow, Wikipedia) and generative models (GPT-4, Cohere, Dolly).
 
@@ -78,26 +78,26 @@ RAID\citep{RAID} is a massive dataset of 6 million text examples from a wide ran
 
 \subsection{Binare Сlassification Models}
 
-For our baseline text classification, we'll use an untrained RobertaForSequenceClassification model fine-tuned for one epoch to compare training times while expecting high accuracy. For uncertainty-based classification, we implement three approaches: (1) logistic regression as the simplest method, (2) a RandomForestClassifier with 300 trees (max depth of tree = 10), and (3) a neural network classifier consisting of 4 linear layers with BatchNorm and Dropout regularization on each layer, optimized using Adam with Binary Cross-Entropy loss ($L = -\frac{1}{N} \sum[y_i·\log(p_i) + (1-y_i)·\log(1-p_i)]$), trained for 300 epochs to ensure convergence. This setup allows comprehensive comparison of both traditional and neural approaches while controlling for computational efficiency.
+For our baseline text classification, we'll use a ROBERTa-Base model fine-tuned for one epoch. For classification, we implement three approaches: (1) logistic regression as the simplest method, (2) a Random Forest with 300 trees (max depth of tree = 10), and (3) a neural network classifier consisting of 4 linear layers with BatchNorm and Dropout regularization on each layer, optimized using Adam with Binary Cross-Entropy loss, trained for 300 epochs to ensure convergence. This setup allows comprehensive comparison of both traditional and neural approaches while controlling computational efficiency.
 
 \section{Computational Experiment}
 
-The primary objective is to compare binary classification based on uncertainty estimates with alternative methods for detecting machine-generated text. To do this, we will use part of the M4GT\citep{wang2024m4gt} dataset as data. The dataset comprises 18,000 texts, with two-thirds generated uniformly by six different models and the remaining one-third consisting of human-written texts. All texts were sourced from arXiv.
+The primary objective is to compare binary classification based on uncertainty estimates with alternative methods for detecting machine-generated text. For this experiment, we utilize data from the M4GT dataset. The dataset comprises 18,000 texts, with two-thirds generated uniformly by six different generation models and the remaining one-third consisting of human-written texts. All texts for this task were sourced from arXiv.
 
 \begin{table}[ht]
 \centering
 \begin{tabular}{llrrrrr}
 \toprule
-\textbf{Metric} & \textbf{Label} & \textbf{Mean} & \textbf{Median} & \textbf{Std} & \textbf{Min} & \textbf{Max} \\
+\textbf{Metric} & \textbf{Label} & \textbf{Mean} & \textbf{Median} & \textbf{Std}  \\
 \midrule
-mean entropy   & Human   & 0.0038   & 0.0038   & 0.0006   & 0.0010   & 0.0066   \\
-mean entropy   & Machine   & 0.0034   & 0.0033   & 0.0007   & 0.0007   & 0.0061   \\
-perplexity    & Human   & 2.2668   & 2.2414   & 0.2887   & 1.2250   & 4.1787   \\
-perplexity    & Machine   & 2.1129   & 2.0516   & 0.3197   & 1.1083   & 3.8121   \\
-mc entropy    & Human   & 232.603  & 224.375  & 54.179   & 63.7188  & 530.000  \\
-mc entropy    & Machine   & 175.064  & 165.625  & 66.8385  & 19.2969  & 550.000  \\
-mahalanobis   & Human   & 125.960  & 124.123  & 23.165   & 72.2812  & 494.407  \\
-mahalanobis   & Machine   & 149.813  & 143.992  & 29.6482  & 92.4591  & 653.824  \\
+mean entropy   & Human   & 0.0038   & 0.0038   & 0.0006    \\
+mean entropy   & Machine   & 0.0034   & 0.0033   & 0.0007   \\
+perplexity    & Human   & 2.2668   & 2.2414   & 0.2887   \\
+perplexity    & Machine   & 2.1129   & 2.0516   & 0.3197  \\
+mc entropy    & Human   & 232.603  & 224.375  & 54.179   \\
+mc entropy    & Machine   & 175.064  & 165.625  & 66.8385  \\
+mahalanobis   & Human   & 125.960  & 124.123  & 23.165  \\
+mahalanobis   & Machine   & 149.813  & 143.992  & 29.6482   \\
 \bottomrule
 \end{tabular}
 \caption{Metrics for human and machine-generated texts}
@@ -105,9 +105,9 @@ mahalanobis   & Machine   & 149.813  & 143.992  & 29.6482  & 92.4591  & 653.824 
 \end{table}
 
 
-We processed texts from both labels using the LLM (Llama-3.1-8B-Instruct) and utilized contextual logits and hidden states to compute four metrics: perplexity, mean token entropy, monte carlo sequence entropy and mahalanobis distance. The results can be seen in Table 1. Some metrics show pronounced variation between human- and machine-generated texts. This finding is promising, as it suggests that the distinction between MG and HW text distributions can potentially be detected using uncertainty estimation (UE). In the following sections, we explore this idea further to develop a more robust detection framework. 
+We got the embeddings for all texts from both labels using the LLM (Llama-3.1-8B-Instruct) and utilized contextual logits to compute four metrics: perplexity, mean token entropy, Monte Carlo sequence entropy and Mahalanobis distance. The results can be seen in Table 1. Some metrics show pronounced variation between human- and machine-generated texts. This finding is promising, as it suggests that the distinction between MG and HW text distributions can potentially be detected using uncertainty estimation (UE). In the following sections, we explore this idea further to develop a more robust detection framework. 
 
-The next step involves training and validating the proposed classification models using our UE.
+The next step involves training and validating the proposed classification models using our obtained features.
 
 \begin{table}[ht]
 \centering
@@ -125,7 +125,7 @@ Logistic Regression with uncertainty & 0.7744 & 0.7317 & 0.0134 \\
 \label{tab:model-performance}
 \end{table}
 
-Table 2 presents the results. The results demonstrate that we have developed an effective approach for text classification with minimal training time requirements. As evidenced by our experiments, the Random Forest classifier achieves competitive ROC-AUC performance (0.7831) while requiring less than 10 seconds for training. In stark contrast, fine-tuning the LLM-based model demands substantially more computational resources, with a training time exceeding 1400 seconds - approximately 200 times slower than our uncertainty-based Random Forest implementation.. Therefore, by selecting a different classifier model, performance could be improved. However, it is noteworthy that the training time of our classifier is significantly shorter.
+Table 2 presents the results. The results demonstrate that we have developed an effective approach for text classification with minimal training time requirements. As evidenced by our experiments, the Random Forest classifier achieves competitive ROC-AUC performance (0.7831) while requiring less than 10 seconds for training. In stark contrast, fine-tuning the LLM-based model demands substantially more computational resources, with a training time exceeding 1400 seconds - approximately 200 times slower than our uncertainty-based Random Forest implementation, but it’s much more accurate, achieving  0.9942 accuracy compared to 0.8183 for Random Forest. Therefore, by selecting a different classifier model, performance could be improved. However, it is noteworthy that the training time of our classifier is significantly shorter.
 
 \section{Conclusion}
 
