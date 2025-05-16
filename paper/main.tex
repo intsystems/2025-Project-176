@@ -16,9 +16,8 @@
 \maketitle
 
 
-
 \begin{abstract}
-	In this work, we explore the use of uncertainty estimation methods to enhance the quality of machine-generated text detectors against various attacks, such as homoglyphs, paraphrasing and noise injection. These attacks are not only used to bypass detection but also to test the resilience of detectors. We will test the hypothesis that uncertainty estimation can provide a more sustainable approach, eliminating the need for constant retraining. The research will evaluate this hypothesis in two scenarios: when only the text is available and when access to the model's internal states is also provided. The planned experiments aim to validate the results and compare them with current state-of-the-art solutions.
+	This study investigates the application of uncertainty estimation methods to enhance the quality of machine-generated text detectors when processing data containing attacks such as homoglyphs, paraphrasing, and noise injection. These attacks are not only used to bypass detection but also serve to test the robustness of detectors. We examine the hypothesis that uncertainty estimation methods can provide a more resilient approach, eliminating the need for continuous retraining across various attack types. We propose a method combining uncertainty estimation with classifiers based on hidden representations of language models. Experiments on the M4GT and RAID datasets demonstrate competitive accuracy (ROC-AUC 0.8977) with significantly lower computational costs compared to fine-tuning large language models (LLMs).
 \end{abstract}
 
 \section{Introduction}
@@ -32,7 +31,7 @@ In this paper, we aim to combine an approach with uncertainty estimation for the
 
 Formally, the problem can be described as follows:  
 
-We formally define our detection framework through a \textbf{classification model} \( F: \mathcal{D} \rightarrow \mathcal{C} \), where \(\mathcal{D}\) represents the space of input texts and \(\mathcal{C} = \{0,1\}\) denotes the binary classification space (0 for human-written texts, 1 for machine-generated outputs). The research will explore two approaches to calculating uncertainty.
+We formally define our detection framework through a \textbf{classification model} \( F: \mathcal{D} \rightarrow \mathcal{C} \), where \(\mathcal{D}\) represents the space of input texts and \(\mathcal{C} = \{0,1\}\) denotes the binary classification space (0 for human-written texts, 1 for machine-generated outputs). There are two main types of uncertainty estimation methods.
 
 \subsection {White-box methods}  
 In this case, the classification model decomposes into \( F = f_2 \circ f_1 \), with \( f_1: \mathcal{D} \rightarrow \mathbb{R}^d \) generating latent representations (in this work, we will utilize either context logits or hidden states obtained by applying a \textbf{representation model} to input texts. The representation model—an open-weight LLM with accessible internal architecture) and \( f_2: \mathbb{R}^d \rightarrow \mathcal{C} \) performing the final classification. In the white-box method, for a specific text, we can observe both \(f_1(x)\) and \(F(x)\), which means that the model allows us to examine its internal states during prediction. The goal is to use various functions applied to the outputs of $f_1$ to study whether texts from different authors cluster together. In this case, uncertainty can be estimated in various ways\citep{Polygraph}, which require some knowledge of the internal workings of the representation model. 
@@ -40,7 +39,7 @@ In this case, the classification model decomposes into \( F = f_2 \circ f_1 \), 
 Typically, three types of such methods are distinguished. The first type comprises \textbf{information-based} methods, which are computed from the representation model's context logits and rely on word prediction probabilities for each token. Another category is \textbf{ensemble-based methods}, requiring multiple distinct representation models to aggregate their output metrics; we exclude this approach due to prohibitive memory and computational costs. Finally, \textbf{density-based} methods analyze the distribution of hidden states h(x): by estimating h(x) distributions for labeled texts, these methods evaluate whether new texts align with (implying matching labels) or deviate from (indicating label mismatch) the learned distributions.
 
 \subsection {Black-box methods}   
-In many modern models, internal states and architecture are not available for study, but even in this case there are many methods for estimating uncertainty based only on the response classification model \(F(x)\). Black-box methods were also used in the work\citep{Polygraph}. The task is to study these methods and compare their effectiveness with the white-box methods. 
+In many modern models, internal states and architecture are not available for study, but even in this case there are many methods for estimating uncertainty based only on the response classification model \(F(x)\). However, these methods typically provide significantly less information than white-box approaches, and thus their application will not be considered in this work.
 
 \subsection{Classification models}
 
@@ -162,6 +161,16 @@ Our results demonstrate that uncertainty estimation methods can effectively iden
 \bibliography{references.bib}
 
 \section{Appendix}
+
+In Figure 1, you can see a UMAP plot of our texts from RAID categorized by attack types. It is noticeable that only the homoglyph attack forms a distinct cluster, while the other types of attacks cannot be reliably distinguished from each other based solely on uncertainty metrics.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1\linewidth]{umap.jpg}
+  \caption{
+    UMAP-projection of texts from RAID categorized by attack types.   }
+  \label{fig:umap}
+\end{figure}
 
 The statistical metrics presented in Table 4 (pertaining to the first subset of the M4GT dataset) reveal significant variations in U) across different class labels. This observed variability in UE values provides a discriminative feature space that enables effective separation between text samples originating from different generative sources.
 
