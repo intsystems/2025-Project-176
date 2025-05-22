@@ -1,76 +1,335 @@
-\documentclass[12pt,pdf,hyperref={unicode}]{beamer}
-%\usetheme{boxes}
+\documentclass{beamer}
 \beamertemplatenavigationsymbolsempty
+\usecolortheme{beaver}
+\setbeamertemplate{blocks}[rounded=true, shadow=true]
 \setbeamertemplate{footline}[page number]
-% Set it for the internal PhD thesis defence to reduce number of slides
-%\setbeamersize{text margin left=0.5em, text margin right=0.5em}
-
+%
 \usepackage[utf8]{inputenc}
-%\usepackage[english, russian]{babel}
-\usepackage{bm}
-\usepackage{multirow}
-\usepackage{ragged2e}
-\usepackage{indentfirst}
-\usepackage{multicol}
+\usepackage[english]{babel}
+\usepackage{amssymb,amsfonts,amsmath,mathtext}
 \usepackage{subfig}
-\usepackage{amsmath,amssymb}
-\usepackage{enumerate}
-\usepackage{mathtools}
-\usepackage{comment}
-\usepackage[all]{xy}
-\usepackage{tikz}
-\usetikzlibrary{positioning,arrows}
-\tikzstyle{name} = [parameters]
-\definecolor{name}{rgb}{0.5,0.5,0.5}
-
-%\usepackage{caption}
-%\captionsetup{skip=0pt,belowskip=0pt}
-
-%\newtheorem{theorem}{Theorem}
-%\newtheorem{statement}{Statement}
-%\newtheorem{definition}{Definition}
-
-% colors
-\definecolor{darkgreen}{rgb}{0.0, 0.2, 0.13}
-\definecolor{darkcyan}{rgb}{0.0, 0.55, 0.55}
-%\AtBeginEnvironment{figure}{\setcounter{subfigure}{0}}
-%\captionsetup[subfloat]{labelformat=empty}
+\usepackage[all]{xy} % xy package for diagrams
+\usepackage{array}
+\usepackage{multicol}% many columns in slide
+\usepackage{hyperref}% urls
+\usepackage{hhline}%tables
+% Your figures are here:
+\graphicspath{ {fig/} {../fig/} }
 
 %----------------------------------------------------------------------------------------------------------
+\title[\hbox to 56mm{Feature generation}]{Uncertainty Estimation Methods for Countering Attacks on Machine-Generated Text Detectors}
+\author[V.\,D.~Levanov]{Valeriy Levanov}
+\institute{Moscow Institute of Physics and Technology}
+\date{\footnotesize
+\par\smallskip\emph{Course:} My first scientific paper\par (Strijov's practice)
+\par\smallskip\emph{Expert:} A.\,V.~Grabovoy
+\par\smallskip\emph{Consultant:} A.\,E.~Voznyuk
+\par\bigskip\small 2025}
 
-\title{ Put the title of your thesis \\ here}
-%\author{Name Surname}
-%\institute[]{}
-%\date{2024}
-
-%---------------------------------------------------------------------------------------------------------
+%----------------------------------------------------------------------------------------------------------
 \begin{document}
-%\begin{frame}
-%\titlepage
-%\end{frame}
-\setcounter{page}{1}%remove here for the title
 %----------------------------------------------------------------------------------------------------------
-%\section{Please do not use sectioning in the presentations}
-\begin{frame}{Perplexity experiment}
- Explore the distribution of the perplexity and mean token enthropy of the Llama-3.1-8B-Instruct logits depending on the model of the generated texts.
-\begin{block}{The problem}
-to investigate the distribution of metrics. $PPL  = \exp\left(-\frac{1}{N} \sum_{i=1}^{N} \log P(w_i | w_{<i})\right)$, $H = -\frac{1}{N} \sum_{i=1}^{N} \sum_{j} P(w_j | w_{<i}) \log P(w_j | w_{<i})$
-\end{block}
-\begin{block}{The solution}
-\begin{enumerate}[1)]
-\item Prepare the Llama-3.1-8B-Instruct, take a part of the M4GT dataset, select the text domain,
-\item Calculate perplexity and MTE metrics for model context logs on prepared texts,
-\item Plot the distribution of texts by metrics on a graph, look at the average values of metrics for different models.
-\end{enumerate}
-\end{block}
+\begin{frame}
+\thispagestyle{empty}
+\maketitle
 \end{frame}
-%----------------------------------------------------------------------------------------------------------
-\begin{frame}{Distribution for reddit data}
-\includegraphics[width=1\textwidth]{reddit.png}   
+%-----------------------------------------------------------------------------------------------------
+\begin{frame}{Goal of research}
+\begin{block}{Machine-generated texts detection task}
+\begin{itemize}
+    \item Develop robust detectors for machine-generated text
+    \item Counter adversarial attacks (homoglyphs, paraphrasing, noise injection)
+    \item Achieve high accuracy with low computational costs
+\end{itemize}
+\end{block}
 
-Texts for different models are clustered by perplexity, and many of the models have significant differences from human texts. 
+\begin{block}{Key hypothesis}
+Uncertainty estimation methods can provide resilient detection without continuous retraining across attack types
+\end{block}
+
 \end{frame}
-\begin{frame}{Distribution for arxiv data}
-\includegraphics[width=1\textwidth]{arxiv.png}   
+%-----------------------------------------------------------------------------------------------------
+\begin{frame}{Literature Review}
+\begin{block}{Key Publications on Uncertainty Estimation}
+\begin{itemize}
+\item \textbf{Polygraph}: Fadeeva A. et al. "Polygraph: Uncertainty-Aware Detection of LLM-Generated Text", ACL 2023
+\item \textbf{M4GT}: Wang Y. et al. "M4GT: Benchmark for Machine-Generated Text Detection", NAACL 2024  
+\item \textbf{RAID}: Sadasivan V. et al. "RAID: Robust AI Detection Dataset", NeurIPS 2023
+\end{itemize}
+\end{block}
+
+\begin{block}{Recent Preprints}
+\begin{itemize}
+\item \textbf{Image Uncertainty}: Jun Nie et al. "Detecting AI-Generated Images via Uncertainty", arXiv:2412.05897 (2024)
+\item \textbf{Perplexity Networks}: Pablo Miralles-González et al. "Token Weighting for AI Text Detection", arXiv:2501.03940 (2025)
+\end{itemize}
+\end{block}
 \end{frame}
-\end{document}
+
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{Problem Statement}
+\begin{block}{Binary text classification}
+Given:
+\begin{itemize}
+    \item Input space $\mathcal{T}$ - all possible texts
+    \item Output space $\mathcal{Y} = \{0,1\}$ (0=human, 1=machine)
+\end{itemize}
+\end{block}
+
+\begin{block}{Detection model}
+Find mapping:
+\begin{equation*}
+F: \mathcal{T} \rightarrow \{0,1\}
+\end{equation*}
+that correctly classifies texts
+\end{block}
+
+\begin{block}{Hypothesis}
+Machine-generated texts exhibit quantifiable differences in prediction confidence compared to human texts
+\end{block}
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{Problem statement}
+
+\begin{block}{Decomposed model architecture}
+\begin{equation*}
+F = f_3 \circ f_2 \circ f_1: \mathcal{T} \rightarrow \{0,1\}
+\end{equation*}
+where:
+\begin{itemize}
+    \item $f_1: \mathcal{T} \rightarrow \mathcal{L}$ - extracts context logits using LLM (Llama-3-8B)
+    \begin{equation*}
+    f_1(t) = \{\ell_i\}_{i=1}^L,\ \ell_i \in \mathbb{R}^{|V|}
+    \end{equation*}
+    
+    \item $f_2: \mathcal{L} \rightarrow \mathbb{R}^d$ - computes uncertainty metrics
+    
+    \item $f_3: \mathbb{R}^d \rightarrow \{0,1\}$ - binary classifier
+\end{itemize}
+\end{block}
+
+\begin{block}{Quality metrics}
+\begin{itemize}
+    \item ROC-AUC (primary)
+    \item Training time (primary)
+    \item Accuracy
+\end{itemize}
+\end{block}
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{Solution}
+\begin{columns}[T]
+\column{0.5\textwidth}
+\begin{block}{Perplexity}
+\footnotesize
+\begin{equation*}
+PPL = \exp\left(-\frac{1}{L}\sum_{l=1}^L \log P(w_l|w_{<l})\right)
+\end{equation*}
+\vspace{-3mm}
+\begin{itemize}
+\item Information-based method
+\end{itemize}
+\end{block}
+
+\begin{block}{MC Entropy}
+\footnotesize
+\begin{equation*}
+H_S = -\frac{1}{K}\sum_{k=1}^K \log P(y^{(k)}|x)
+\end{equation*}
+\vspace{-3mm}
+\begin{itemize}
+\item Information-based method
+\end{itemize}
+\end{block}
+
+\column{0.5\textwidth}
+\begin{block}{Mean Token Entropy}
+\footnotesize
+\begin{equation*}
+H = -\frac{1}{L}\sum_{i=1}^L \sum_j P(w_j|w_{<i})\log P(w_j|w_{<i})
+\end{equation*}
+\vspace{-3mm}
+\begin{itemize}
+\item Information-based method
+\end{itemize}
+\end{block}
+
+\begin{block}{Mahalanobis distance}
+\footnotesize
+\begin{equation*}
+MD = \sqrt{(h-\mu)^T\Sigma^{-1}(h-\mu)}
+\end{equation*}
+\vspace{-3mm}
+\begin{itemize}
+\item Dencity-based method
+\item  Method fits a Gaussian centered at the training data centroid µ with an empirical covariance $\Sigma$ matrix 
+\end{itemize}
+\end{block}
+\end{columns}
+
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{Computational Experiment}
+\begin{block}{Model Configuration}
+\begin{itemize}
+\item \textbf{LLM}: Llama-3-8B-Instruct
+\item \textbf{Features}: 
+  \begin{itemize}
+  \item Top-512 context logits per token
+  \item Max token count - 512
+  \end{itemize}
+\end{itemize}
+\end{block}
+
+\begin{block}{Datasets}
+\begin{columns}[T]
+\column{0.5\textwidth}
+\begin{block}{\small M4GT (arXiv)}
+\begin{itemize}
+\item 12K machine / 6K human
+\item 6 generation models
+\item Clean data (no attacks)
+\end{itemize}
+\end{block}
+
+\column{0.5\textwidth}
+\begin{block}{\small RAID (Reddit)}
+\begin{itemize}
+\item 15K machine / 15K human
+\item 12 generation models
+\item 11 attack types
+\end{itemize}
+\end{block}
+\end{columns}
+\end{block}
+
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{Classification Models}
+\begin{block}{Baseline Model}
+\begin{itemize}
+\item \textbf{ROBERTa-Base} fine-tuned
+\item Trained for 1 epoch
+\end{itemize}
+\end{block}
+
+\begin{columns}[T]
+\column{0.5\textwidth}
+\begin{block}{Uncertainty-Based Classifiers}
+\begin{itemize}
+\item \textbf{Logistic Regression}
+  \begin{itemize}
+  \item Linear baseline
+  \item Fast training
+  \end{itemize}
+  
+\item \textbf{Random Forest}
+  \begin{itemize}
+  \item 300 trees
+  \item Max depth = 10
+  \end{itemize}
+\end{itemize}
+\end{block}
+
+\column{0.5\textwidth}
+\begin{block}{}
+\begin{itemize}
+\item \textbf{Neural Network}
+  \begin{itemize}
+  \item Architecture:
+    \begin{itemize}
+    \item 4 linear layers
+    \item BatchNorm + Dropout
+    \end{itemize}
+  \item Training:
+    \begin{itemize}
+    \item Adam optimizer
+    \item BCE loss
+    \item 300 epochs
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+\end{block}
+\end{columns}
+
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{Results:}
+
+
+\begin{table}[h]
+\centering
+\scalebox{0.85}{
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Model} & \textbf{ROC-AUC} & \textbf{Accuracy} & \textbf{Train Time (s)} \\
+\hline
+BERT Classifier & 0.9954 & 0.9942 & 1489 \\
+Neural Classifier + UE & 0.7942 & 0.8183 & 208 \\
+Random Forest + UE & 0.7831 & 0.8103 & 6.77 \\
+Logistic Regression + UE & 0.7317 & 0.7744 & 0.013 \\
+\hline
+\end{tabular}}
+\caption{Performance comparison on arXiv data from M4GT}
+\label{tab:model-performance-arxiv}
+\end{table}
+
+\begin{table}[h]
+\centering
+\scalebox{0.85}{
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Model} & \textbf{ROC-AUC} & \textbf{Accuracy} & \textbf{Train Time (s)} \\
+\hline
+BERT Classifier & 0.9532 & 0.9538 & 2362 \\
+Neural Classifier + UE & 0.8977 & 0.8987 & 378 \\
+Random Forest + UE & 0.8987 & 0.8992 & 10.7 \\
+Logistic Regression + UE & 0.7258 & 0.7271 & 0.035 \\
+\hline
+\end{tabular}}
+\caption{Performance comparison on Reddit data from RAID}
+\label{tab:model-performance-reddit}
+\end{table}
+
+Key findings:
+\begin{itemize}
+    \item Accuracy reduction of BERT Classifier on attacked dataset
+    \item 200x faster than BERT with  5.5\% performance drop
+\end{itemize}
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+\begin{frame}{Conclusion}
+\begin{columns}[T]
+\column{0.4\textwidth}
+\begin{block}{Results}
+\begin{itemize}
+\item ROC-AUC: 0.89 (RAID dataset)
+\item Training time:
+  \begin{itemize}
+  \item Rand Forest: 10s
+  \item Neural Net: 378s
+  \end{itemize}
+\end{itemize}
+\end{block}
+
+\begin{block}{Future Work}
+\begin{itemize}
+\item Architecture search
+\item Hyperparameter optimization
+\item Attack pattern detection
+\end{itemize}
+\end{block}
+
+\column{0.73\textwidth}
+\begin{center}
+\includegraphics[width=\textwidth]{umap.jpg}\\
+\footnotesize\textcolor{gray}{UMAP: embeddings in uncertainty metric space by attacks}
+\end{center}
+\end{columns}
+
+\begin{alertblock}{}
+\centering Uncertainty metrics reveal some attack patterns
+\end{alertblock}
+\end{frame}
+%----------------------------------------------------------------------------------------------------------
+\end{document} 
